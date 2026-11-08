@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SEO Tag Analyzer – Check meta tags, Google &amp; social previews</title>
+  <meta name="description" content="Fetch any web page and check its SEO meta tags against best practices, with live Google and social media previews.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230f5e57'/><path d='M9 17l5 5 9-12' stroke='white' stroke-width='3.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><rect width="32" height="32" rx="8"/><path d="M9 17l5 5 9-12"/></svg>
+      </span>
+      <div>
+        <h1>SEO Tag Analyzer</h1>
+        <p class="tagline">Is your page ready for Google and the share button?</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="search-panel">
+      <form id="search-form" autocomplete="off">
+        <label for="url-input" class="sr-only">Website URL</label>
+        <div class="search-box">
+          <span class="search-prefix" aria-hidden="true">🌐</span>
+          <input id="url-input" type="text" inputmode="url" placeholder="Enter a website, e.g. stinson.com" spellcheck="false" required>
+          <button type="submit" id="analyze-btn">Analyze</button>
+        </div>
+      </form>
+      <div class="examples">
+        Try:
+        <button class="chip" data-url="https://www.deeplearning.ai">deeplearning.ai</button>
+        <button class="chip" data-url="https://www.anthropic.com">anthropic.com</button>
+        <button class="chip" data-url="https://github.com">github.com</button>
+        <button class="chip" data-url="https://www.nytimes.com">nytimes.com</button>
+      </div>
+    </section>
+
+    <section id="status" class="status hidden" role="status" aria-live="polite"></section>
+
+    <section id="empty-state" class="empty-state">
+      <div class="empty-grid">
+        <div class="empty-card"><span>📋</span><h3>Tag report</h3><p>Every title, description, canonical, robots, Open Graph and Twitter tag checked against current best practice.</p></div>
+        <div class="empty-card"><span>🔎</span><h3>Google preview</h3><p>See your result as it would appear on desktop and mobile, with pixel-accurate truncation.</p></div>
+        <div class="empty-card"><span>💬</span><h3>Social previews</h3><p>Facebook, X, LinkedIn and Slack link cards, showing which tag fed each field.</p></div>
+      </div>
+    </section>
+
+    <section id="results" class="results hidden">
+      <!-- Summary -->
+      <div class="summary">
+        <div class="score-wrap">
+          <svg class="score-ring" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="ring-bg" cx="60" cy="60" r="52"/>
+            <circle class="ring-fg" id="score-arc" cx="60" cy="60" r="52"/>
+          </svg>
+          <div class="score-num"><span id="score-value">0</span><small>/100</small></div>
+        </div>
+        <div class="summary-body">
+          <div class="summary-url">
+            <img id="site-favicon" alt="" width="20" height="20">
+            <a id="final-url" target="_blank" rel="noopener"></a>
+          </div>
+          <p id="score-verdict" class="verdict"></p>
+          <div class="counts">
+            <button class="count pass" data-filter="pass"><b id="count-pass">0</b> passed</button>
+            <button class="count warn" data-filter="warn"><b id="count-warn">0</b> warnings</button>
+            <button class="count fail" data-filter="fail"><b id="count-fail">0</b> failed</button>
+            <button class="count info" data-filter="info"><b id="count-info">0</b> notes</button>
+          </div>
+          <div class="meta-strip" id="meta-strip"></div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <nav class="tabs" role="tablist">
+        <button role="tab" class="tab active" data-tab="report">Report</button>
+        <button role="tab" class="tab" data-tab="google">Google preview</button>
+        <button role="tab" class="tab" data-tab="social">Social previews</button>
+        <button role="tab" class="tab" data-tab="tags">All tags</button>
+      </nav>
+
+      <div class="tab-panel" id="panel-report">
+        <div class="filter-row">
+          <span>Show:</span>
+          <button class="filter active" data-filter="all">All</button>
+          <button class="filter" data-filter="fail">Failed</button>
+          <button class="filter" data-filter="warn">Warnings</button>
+          <button class="filter" data-filter="pass">Passed</button>
+          <button class="filter" data-filter="info">Notes</button>
+        </div>
+        <div id="report"></div>
+      </div>
+
+      <div class="tab-panel hidden" id="panel-google">
+        <div class="preview-grid google-grid">
+          <div>
+            <h3 class="preview-label">Desktop</h3>
+            <div class="serp serp-desktop" id="serp-desktop"></div>
+          </div>
+          <div>
+            <h3 class="preview-label">Mobile</h3>
+            <div class="phone"><div class="serp serp-mobile" id="serp-mobile"></div></div>
+          </div>
+        </div>
+        <div class="meters" id="serp-meters"></div>
+        <p class="footnote">Google may rewrite titles and snippets based on the search query. These previews show what your tags ask for.</p>
+      </div>
+
+      <div class="tab-panel hidden" id="panel-social">
+        <div class="preview-grid social-grid" id="social-grid"></div>
+      </div>
+
+      <div class="tab-panel hidden" id="panel-tags">
+        <div class="filter-row">
+          <input id="tag-search" type="search" placeholder="Filter tags (e.g. og:, twitter, canonical)">
+        </div>
+        <div id="all-tags"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">Built for the Vibe Coding 101 SEO Analyzer project · Runs locally on your machine</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
