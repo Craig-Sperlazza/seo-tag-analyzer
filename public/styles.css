@@ -29,14 +29,15 @@
 }
 
 * { box-sizing: border-box; }
+html { background: var(--bg); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 html, body { margin: 0; }
 body {
+  overflow-x: hidden;
   font-family: var(--sans);
   font-size: 14px;
   background:
     linear-gradient(rgba(0,255,156,.035) 1px, transparent 1px) 0 0 / 100% 3px,
     radial-gradient(ellipse at top, #0a1f1a 0%, var(--bg) 60%);
-  background-attachment: fixed;
   color: var(--ink);
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -231,6 +232,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 28px 32px 60px; }
 
 /* ---------- Previews ---------- */
 .preview-grid { display: grid; gap: 22px; }
+.preview-grid > * { min-width: 0; }
 .google-grid { grid-template-columns: 1.6fr 1fr; align-items: start; }
 .social-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .preview-label { font-size: 12px; text-transform: uppercase; letter-spacing: .14em; color: var(--accent-2); margin: 0 0 8px; font-weight: 600; }
@@ -244,7 +246,9 @@ main { max-width: 1180px; margin: 0 auto; padding: 28px 32px 60px; }
 
 /* Google SERP */
 .serp { background: #fff; font-family: Arial, sans-serif; }
-.serp-desktop { border: 1px solid var(--line); padding: 22px 24px; }
+.serp-desktop { border: 1px solid var(--line); padding: 22px 24px; overflow-x: auto; }
+/* Keep the 600px truncation width honest on narrow screens: scroll instead of squeezing. */
+.serp-desktop .serp-site, .serp-desktop .serp-title, .serp-desktop .serp-desc { min-width: 552px; }
 .serp-site { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
 .serp-fav { width: 28px; height: 28px; border-radius: 50%; background: #f1f3f4; border: 1px solid #e3e3e3; display: grid; place-content: center; overflow: hidden; flex: none; }
 .serp-fav img { width: 18px; height: 18px; }
@@ -301,7 +305,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 28px 32px 60px; }
 .li-title { font-size: 14px; font-weight: 600; color: rgba(0,0,0,.9); line-height: 20px; }
 .li-domain { font-size: 12px; color: rgba(0,0,0,.6); margin-top: 2px; }
 
-.slack { display: flex; gap: 12px; font-family: Lato, "Segoe UI", sans-serif; }
+.slack { display: flex; gap: 12px; font-family: Lato, "Segoe UI", sans-serif; background: #fff; padding: 14px; }
 .slack-bar { width: 4px; border-radius: 4px; background: #dddddd; flex: none; }
 .slack-site { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: #1d1c1d; }
 .slack-site img { width: 16px; height: 16px; border-radius: 3px; }
@@ -329,13 +333,98 @@ main { max-width: 1180px; margin: 0 auto; padding: 28px 32px 60px; }
   .brand h1::after { animation: none; }
 }
 
+/* Respect notches / rounded corners on phones (needs viewport-fit=cover). */
+.topbar { padding-left: max(32px, env(safe-area-inset-left)); padding-right: max(32px, env(safe-area-inset-right)); }
+main { padding-left: max(32px, env(safe-area-inset-left)); padding-right: max(32px, env(safe-area-inset-right)); }
+
+/* ---------- Tablet ---------- */
 @media (max-width: 860px) {
-  main { padding: 20px 16px 40px; }
-  .topbar { padding: 16px; }
+  main { padding: 20px max(16px, env(safe-area-inset-right)) 40px max(16px, env(safe-area-inset-left)); }
+  .topbar { padding: 16px max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left)); }
   .empty-grid, .google-grid, .social-grid, .meters { grid-template-columns: 1fr; }
   .summary { flex-direction: column; align-items: flex-start; }
   .check-head { grid-template-columns: 26px 1fr 20px; }
   .check-summary { grid-column: 2 / 3; white-space: normal; }
   .check-head .chev { grid-row: 1; grid-column: 3; }
   .check-body { padding-left: 18px; }
+  .phone { margin: 0 auto; }
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 560px) {
+  :root { --cut: 8px; }
+  body { font-size: 14px; }
+  .topbar { padding-top: 12px; padding-bottom: 12px; }
+  .brand { gap: 10px; }
+  .brand-mark svg { width: 36px; height: 36px; }
+  .brand h1 { font-size: 17px; letter-spacing: .08em; }
+  .tagline { font-size: 11.5px; }
+  main { padding-top: 16px; }
+
+  /* search: input on top, full-width button below */
+  .search-box { flex-wrap: wrap; padding: 10px; gap: 8px; }
+  .search-prefix { margin-right: 0; }
+  #url-input { flex: 1 1 calc(100% - 40px); font-size: 16px; /* >=16px stops iOS zoom-on-focus */ min-height: 36px; }
+  #analyze-btn { flex: 1 1 100%; min-height: 46px; }
+  .examples { margin-left: 0; }
+
+  .empty-state { margin-top: 24px; }
+  .empty-card { padding: 16px; }
+
+  .summary { padding: 18px 16px; gap: 18px; align-items: stretch; }
+  .score-wrap { align-self: center; }
+  .summary-url a { font-size: 15px; white-space: normal; word-break: break-all; }
+  .counts .count { flex: 1 1 calc(50% - 8px); text-align: center; min-height: 40px; }
+  .meta-strip { gap: 4px 14px; }
+
+  /* tabs: single swipeable row instead of wrapping onto two lines */
+  .tabs { flex-wrap: nowrap; overflow-x: auto; margin-left: -16px; margin-right: -16px; padding: 0 16px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { white-space: nowrap; padding: 12px 12px; font-size: 12px; letter-spacing: .06em; flex: none; }
+
+  .filter-row { gap: 6px; }
+  .filter { min-height: 36px; }
+  #tag-search { max-width: none; font-size: 16px; min-height: 44px; }
+
+  .category-head { flex-direction: column; gap: 4px; }
+  .category-head h2 { font-size: 13px; letter-spacing: .1em; }
+  .check-head { padding: 12px 14px; gap: 10px; min-height: 48px; }
+  .check-body { padding: 0 14px 14px; }
+  .value { font-size: 12px; overflow-x: auto; }
+  .lenbar .track { max-width: none; }
+
+  .preview-card { padding: 14px; }
+  .phone { padding: 10px; border-radius: 28px; }
+  .serp-mobile { border-radius: 18px; padding: 14px 12px; }
+  .serp-mobile .serp-crumb { max-width: 100%; }
+  .x-small .thumb, .x-small .thumb img, .x-small .thumb .img-missing { width: 96px; }
+  .x-small .thumb img, .x-small .thumb .img-missing { height: 96px; }
+  .slack { padding: 12px; }
+  .slack .social-img, .slack .img-missing { max-width: 100%; }
+
+  /* tag table: stack each row as a small card instead of three squeezed columns */
+  .tag-table, .tag-table tbody, .tag-table tr, .tag-table td { display: block; width: auto; }
+  .tag-table thead { display: none; }
+  .tag-table tr { padding: 10px 14px; border-top: 1px solid var(--line); }
+  .tag-table tr:first-child { border-top: 0; }
+  .tag-table td, .tag-table td:first-child, .tag-table td:nth-child(2) { width: auto; padding: 0; border: 0; white-space: normal; }
+  .tag-table td:first-child { font-size: 11.5px; color: var(--accent-2); }
+  .tag-table td:nth-child(2) { color: var(--accent); margin-bottom: 2px; }
+  .tag-table td:nth-child(3) { color: var(--ink-2); overflow-wrap: anywhere; }
+  .jsonld pre { font-size: 11.5px; padding: 12px; }
+  .footer { padding: 0 16px 24px; }
+}
+
+/* Touch devices: comfortable tap targets regardless of width */
+@media (pointer: coarse) {
+  .chip { min-height: 36px; padding: 6px 12px; }
+  .filter { min-height: 36px; }
+  .tab { min-height: 44px; }
+  .count { min-height: 36px; }
+}
+
+/* Very short landscape phones: don't let the header eat the screen */
+@media (max-height: 450px) and (orientation: landscape) {
+  .topbar { padding-top: 8px; padding-bottom: 8px; }
+  .tagline { display: none; }
 }

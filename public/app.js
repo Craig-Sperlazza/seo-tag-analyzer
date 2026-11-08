@@ -476,7 +476,8 @@ function render() {
   renderGoogle();
   renderSocial();
   renderTags();
-  selectTab("report");
+  selectTab(startTab);
+  startTab = "report";
 }
 
 function renderSummary() {
@@ -771,6 +772,7 @@ function setStatus(html, isError = false) {
 }
 function hideStatus() { $("#status").classList.add("hidden"); }
 
+let startTab = "report";
 function selectTab(name) {
   $$(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
   $$(".tab-panel").forEach((p) => p.classList.toggle("hidden", p.id !== `panel-${name}`));
@@ -792,6 +794,8 @@ $("#tag-search").addEventListener("input", (e) => {
 });
 
 // Support links like http://localhost:8000/?url=example.com
-const initial = new URLSearchParams(location.search).get("url");
+const params = new URLSearchParams(location.search);
+const initial = params.get("url");
+if (["report", "google", "social", "tags"].includes(params.get("tab"))) startTab = params.get("tab");
 if (initial) { $("#url-input").value = initial; analyze(initial); }
 else $("#url-input").focus();
