@@ -1,5 +1,5 @@
 /* ============================================================
-   SEO Tag Analyzer - cyberpunk / matrix / samurai theme
+   SEO Tag Analyzer - cyberpunk / samurai theme
    Neon green + cyan on near-black, angular cut corners, monospace.
    ============================================================ */
 :root {
@@ -46,8 +46,6 @@ body {
 button { font: inherit; cursor: pointer; }
 .hidden { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-#matrix { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; opacity: .22; pointer-events: none; }
-.topbar, main, .footer { position: relative; z-index: 1; }
 * { scrollbar-width: thin; scrollbar-color: var(--accent) var(--surface); }
 
 /* angular "katana-cut" corners on panels */
@@ -329,7 +327,6 @@ main { max-width: 1180px; margin: 0 auto; padding: 28px 32px 60px; }
 
 @media (prefers-reduced-motion: reduce) {
   .brand h1::after { animation: none; }
-  #matrix { display: none; }
 }
 
 @media (max-width: 860px) {
