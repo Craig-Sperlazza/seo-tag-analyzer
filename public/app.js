@@ -43,12 +43,40 @@ function truncatePx(text, maxPx, font) {
 /* =====================================================================
    Fetch + parse
    ===================================================================== */
+function showUrlNotes(notes) {
+  const ul = $("#url-notes");
+  ul.innerHTML = (notes || []).map((n) => `<li>${esc(n)}</li>`).join("");
+  ul.classList.toggle("hidden", !(notes || []).length);
+}
+
+/* Display-only preview of what will be checked (the server does the real cleanup). */
+function previewUrl(v) {
+  v = v.trim().replace(/^["'<>]+|["'<>]+$/g, "");
+  if (!v) return "";
+  const m = v.match(/^(https?)(?::\/{0,2}|\/{1,2})/i);
+  let rest = m ? v.slice(m[0].length) : v.replace(/^\/+/, "");
+  rest = rest.split("#")[0];
+  const host = rest.split(/[/?]/)[0];
+  if (!host || /\s/.test(rest)) return "";
+  rest = host.toLowerCase() + rest.slice(host.length);
+  if (!/[.:]/.test(host) && host !== "localhost") rest = host + ".com" + rest.slice(host.length);
+  return `${m ? m[1].toLowerCase() : "https"}://${rest}`;
+}
+function updateHint() {
+  const hint = $("#url-hint"), v = $("#url-input").value;
+  const u = previewUrl(v);
+  hint.textContent = u ? `We'll check ${u}` : "Just type the site name. No need for https:// or www.";
+  hint.classList.toggle("active", !!u);
+}
+$("#url-input").addEventListener("input", updateHint);
+
 async function analyze(rawUrl) {
   rawUrl = rawUrl.trim();
   if (!rawUrl) return;
   const btn = $("#analyze-btn");
   btn.disabled = true;
-  setStatus(`<div class="spinner"></div> Fetching <b>${esc(rawUrl)}</b> and checking its tags…`);
+  showUrlNotes([]);
+  setStatus(`<div class="spinner"></div> Fetching <b>${esc(previewUrl(rawUrl) || rawUrl)}</b> and checking its tags…`);
 
   try {
     let res;
@@ -69,6 +97,7 @@ async function analyze(rawUrl) {
 
     hideStatus();
     render();
+    showUrlNotes(data.notes);
     const qs = new URLSearchParams({ url: rawUrl });
     history.replaceState(null, "", `?${qs}`);
   } catch (err) {
@@ -187,6 +216,55 @@ const CATEGORIES = [
   ["twitter", "Twitter / X cards"],
   ["technical", "Indexing & technical"],
 ];
+
+/* Plain-English helpers for people new to SEO */
+const CAT_INFO = {
+  essentials: { short: "Essentials", blurb: "The basics every page needs: title, description and core tags." },
+  content: { short: "Content", blurb: "What visitors and search crawlers actually read on the page." },
+  og: { short: "Facebook / LinkedIn / Slack", blurb: "How your link looks when someone shares it in these apps." },
+  twitter: { short: "X (Twitter)", blurb: "How your link looks when someone shares it on X." },
+  technical: { short: "Indexing & technical", blurb: "Whether Google can find, crawl and index the page." },
+};
+const STATUS_LABEL = { fail: "Fix this", warn: "Improve", pass: "Good", info: "Note" };
+const STATUS_ORDER = { fail: 0, warn: 1, info: 2, pass: 3 };
+const WHY = {
+  "Title tag": "The blue headline people see in Google. It is the single biggest on-page signal for what the page is about.",
+  "Meta description": "The grey summary under your Google result. It does not affect ranking directly, but a good one gets more people to click.",
+  "Canonical URL": "Tells Google which address is the 'official' one when the same page is reachable several ways, so rankings are not split.",
+  "Robots directives": "Instructions that can tell Google not to index the page. A stray 'noindex' makes a page invisible in search.",
+  "Mobile viewport": "Without it, phones show a shrunken desktop page. Google ranks mobile-friendly pages higher.",
+  "Language attribute": "Helps search engines and screen readers know which language the page is in.",
+  "Character encoding": "Makes sure special characters (accents, quotes, symbols) display correctly.",
+  "Favicon": "The tiny icon beside your result in Google and in browser tabs. It helps your listing look trustworthy.",
+  "H1 heading": "The main headline on the page itself. One clear H1 tells visitors and Google what the page is about.",
+  "Heading structure": "Headings (H1, H2, H3...) work like an outline. A logical order makes the page easier to scan and to understand.",
+  "Image alt text": "Short descriptions of images. They help blind users, and they let Google understand and index your images.",
+  "Crawlable text": "If the text only appears after JavaScript runs, some crawlers and social scrapers see an empty page.",
+  "og:title": "The headline shown when the link is shared on Facebook, LinkedIn, Slack and others.",
+  "og:description": "The short blurb shown in link cards on social apps.",
+  "og:image": "The picture shown in link cards. Posts with a good image get far more clicks and shares.",
+  "og:url": "The official address for the shared link, so likes and shares are counted together.",
+  "og:type": "Tells social apps what kind of page this is (website, article, product...).",
+  "og:site_name": "Your brand name, shown above the title in some link cards.",
+  "og:image:alt": "A text description of the share image, for accessibility.",
+  "twitter:card": "Chooses the card layout on X (large image or small). Without it X may show a plain link.",
+  "twitter:title": "The headline in the X card. Falls back to og:title if missing.",
+  "twitter:description": "The blurb in the X card. Falls back to og:description if missing.",
+  "twitter:image": "The picture in the X card. Falls back to og:image if missing.",
+  "twitter:site": "Links the card to your brand's X account.",
+  "HTTP status": "200 means the page loaded fine. Errors (404, 500...) mean Google cannot index it.",
+  "HTTPS": "Secure pages are a small ranking signal, and browsers warn visitors away from insecure ones.",
+  "Redirect": "Redirects are fine, but long chains slow the page and can dilute ranking signals.",
+  "Structured data": "Hidden code (JSON-LD) that lets Google show rich results like stars, FAQs and breadcrumbs.",
+  "robots.txt": "A file that tells crawlers where they may go. Having one (and not blocking important pages) is good hygiene.",
+  "XML sitemap": "A list of your pages that helps Google discover them faster.",
+  "Duplicate tags": "Repeated tags can contradict each other, so platforms pick one unpredictably.",
+  "hreflang": "Tells Google which language or country version of a page to show to which users.",
+  "Meta keywords": "Google ignores this tag. It is harmless but pointless, and it shows competitors your keywords.",
+};
+const impactOf = (c) => (c.weight >= 8 ? ["high", "High impact"] : c.weight >= 4 ? ["med", "Medium impact"] : ["low", "Low impact"]);
+const scoreColor = (n) => (n >= 80 ? "var(--pass)" : n >= 55 ? "var(--warn)" : "var(--fail)");
+const hasScore = (items) => items.some((c) => c.status !== "info" && c.weight);
 
 function runChecks(p) {
   const checks = [];
@@ -472,6 +550,7 @@ function render() {
   $("#empty-state").classList.add("hidden");
   $("#results").classList.remove("hidden");
   renderSummary();
+  renderOverview();
   renderReport();
   renderGoogle();
   renderSocial();
@@ -489,10 +568,15 @@ function renderSummary() {
   arc.style.strokeDashoffset = 326.7;
   requestAnimationFrame(() => requestAnimationFrame(() => (arc.style.strokeDashoffset = 326.7 * (1 - s / 100))));
   animateNumber($("#score-value"), s);
+  $("#score-value").style.color = color;
+  $("#score-value").style.textShadow = `0 0 8px ${color}`;
 
   const counts = { pass: 0, warn: 0, fail: 0, info: 0 };
   checks.forEach((c) => counts[c.status]++);
   for (const k in counts) $(`#count-${k}`).textContent = counts[k];
+  $("#stackbar").innerHTML = ["pass", "warn", "fail", "info"]
+    .filter((k) => counts[k])
+    .map((k) => `<i class="${k}" style="flex:${counts[k]}" title="${counts[k]} ${STATUS_LABEL[k].toLowerCase()}"></i>`).join("");
 
   $("#score-verdict").textContent =
     s >= 90 ? "Excellent — this page's tags are in great shape." :
@@ -530,26 +614,113 @@ function animateNumber(el, to) {
 
 const ICON = { pass: "✓", warn: "!", fail: "✕", info: "i" };
 
+/* ---------- At-a-glance overview: category rings + "fix first" list ---------- */
+const RING_C = 2 * Math.PI * 26;
+function ringSvg(pct, color) {
+  return `<svg viewBox="0 0 64 64" aria-hidden="true"><circle class="r-bg" cx="32" cy="32" r="26"/><circle class="r-fg" cx="32" cy="32" r="26" style="stroke:${color};stroke-dasharray:${RING_C.toFixed(1)};stroke-dashoffset:${(RING_C * (1 - pct / 100)).toFixed(1)}"/></svg>`;
+}
+
+function renderOverview() {
+  const cards = CATEGORIES.map(([key]) => {
+    const items = state.checks.filter((c) => c.cat === key);
+    if (!items.length) return "";
+    const info = CAT_INFO[key];
+    const scored = hasScore(items);
+    const sc = scored ? score(items) : null;
+    const n = { fail: 0, warn: 0, pass: 0, info: 0 };
+    items.forEach((c) => n[c.status]++);
+    const tone = !scored ? "info" : sc >= 80 ? "pass" : sc >= 55 ? "warn" : "fail";
+    const parts = [
+      n.fail ? `<b class="t-fail">${n.fail} to fix</b>` : "",
+      n.warn ? `<b class="t-warn">${n.warn} to improve</b>` : "",
+      n.pass ? `<span class="t-pass">${n.pass} good</span>` : "",
+    ].filter(Boolean).join(" · ") || "Notes only";
+    const dots = items
+      .slice().sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status])
+      .map((c) => `<i class="${c.status}" title="${esc(c.name)} — ${STATUS_LABEL[c.status]}"></i>`).join("");
+    return `
+      <button class="cat-card ${tone}" data-cat="${key}" title="Open the ${esc(info.short)} checks">
+        <div class="cat-ring">${ringSvg(sc ?? 0, scored ? scoreColor(sc) : "var(--info)")}<span>${scored ? sc : "–"}</span></div>
+        <div class="cat-main">
+          <h3>${esc(info.short)}</h3>
+          <p class="cat-blurb">${esc(info.blurb)}</p>
+          <div class="cat-dots">${dots}</div>
+          <div class="cat-sum">${parts}</div>
+        </div>
+      </button>`;
+  }).join("");
+  $("#cat-grid").innerHTML = cards;
+
+  // Fix-first list: failures and warnings, biggest score impact first
+  const sev = (c) => c.weight * (c.status === "fail" ? 1 : 0.5);
+  const problems = state.checks
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => c.status === "fail" || c.status === "warn")
+    .sort((a, b) => sev(b.c) - sev(a.c));
+  const box = $("#fix-first");
+  if (!problems.length) {
+    box.innerHTML = `<div class="allgood"><span class="icon pass">✓</span><div><b>No problems found.</b><p>Every scored check passed. Open the Report tab to see the details behind each one.</p></div></div>`;
+    return;
+  }
+  const LIMIT = 5;
+  box.innerHTML = `
+    <div class="ff-head">
+      <h3>Fix these first <small>${problems.length} ${problems.length === 1 ? "issue" : "issues"}, biggest impact first</small></h3>
+      <button class="link-btn" id="ff-all">See all in report</button>
+    </div>
+    <ol class="ff-list">
+      ${problems.map(({ c, i }, n) => {
+        const [lvl, lbl] = impactOf(c);
+        return `<li class="${n >= LIMIT ? "more hidden" : ""}"><button data-chk="${i}">
+          <span class="icon ${c.status}">${ICON[c.status]}</span>
+          <span class="ff-main"><b>${esc(c.name)}</b><span>${esc(c.summary)}</span></span>
+          <span class="impact ${lvl}">${lbl}</span>
+        </button></li>`;
+      }).join("")}
+    </ol>
+    ${problems.length > LIMIT ? `<button class="link-btn" id="ff-more">Show ${problems.length - LIMIT} more</button>` : ""}`;
+}
+
+/* Jump from the overview into the detailed report */
+function goToReport({ cat, chk } = {}) {
+  state.filter = "all";
+  selectTab("report");
+  applyFilter();
+  let target = null;
+  if (chk !== undefined) {
+    target = document.getElementById(`chk-${chk}`);
+    target?.classList.add("open");
+  } else if (cat) target = document.getElementById(`cat-${cat}`);
+  if (!target) return;
+  target.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  target.classList.remove("flash");
+  void target.offsetWidth;
+  target.classList.add("flash");
+}
+
 function renderReport() {
   const html = CATEGORIES.map(([key, label]) => {
     const items = state.checks.filter((c) => c.cat === key);
     if (!items.length) return "";
     const catScore = score(items);
+    const nProb = items.filter((c) => c.status === "fail" || c.status === "warn").length;
+    const sorted = items.slice().sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]); // problems first
     return `
-      <div class="category" data-cat="${key}">
+      <div class="category" id="cat-${key}" data-cat="${key}">
         <div class="category-head">
           <h2>${esc(label)}</h2>
-          <span class="mini">${catScore}%<span class="mini-bar"><i style="width:${catScore}%;background:${catScore >= 80 ? "var(--pass)" : catScore >= 55 ? "var(--warn)" : "var(--fail)"}"></i></span></span>
+          <span class="mini">${nProb ? `<b class="t-warn">${nProb} to look at</b> · ` : ""}${hasScore(items) ? catScore + "%" : ""}<span class="mini-bar"><i style="width:${hasScore(items) ? catScore : 0}%;background:${scoreColor(catScore)}"></i></span></span>
         </div>
-        <div class="checks">${items.map(checkHtml).join("")}</div>
+        <div class="checks">${sorted.map((c) => checkHtml(c, state.checks.indexOf(c))).join("")}</div>
       </div>`;
   }).join("");
   $("#report").innerHTML = html;
   applyFilter();
 }
 
-function checkHtml(c) {
+function checkHtml(c, idx) {
   const body = [];
+  if (WHY[c.name] || WHY[c.key]) body.push(`<p class="why"><b>Why it matters:</b> ${esc(WHY[c.name] || WHY[c.key])}</p>`);
   if (c.value !== undefined) {
     body.push(c.value === null || c.value === "" ? `<div class="value empty">Not found in the page</div>` : `<div class="value">${esc(c.value)}</div>`);
   }
@@ -563,11 +734,12 @@ function checkHtml(c) {
   if (c.tip) body.push(`<p class="tip"><b>Best practice:</b> ${esc(c.tip)}</p>`);
   const hasBody = body.length > 0;
   return `
-    <div class="check ${c.status === "fail" && hasBody ? "open" : ""}" data-status="${c.status}">
+    <div class="check ${(c.status === "fail" || c.status === "warn") && hasBody ? "open" : ""}" id="chk-${idx}" data-status="${c.status}">
       <button class="check-head" ${hasBody ? "" : "disabled style='cursor:default'"}>
         <span class="icon ${c.status}">${ICON[c.status]}</span>
         <span class="check-name">${esc(c.name)}</span>
         <span class="check-summary">${esc(c.summary)}</span>
+        <span class="pill ${c.status}">${STATUS_LABEL[c.status]}</span>
         <span class="chev">${hasBody ? "▶" : ""}</span>
       </button>
       ${hasBody ? `<div class="check-body">${body.join("")}</div>` : ""}
@@ -589,7 +761,7 @@ function lenbarHtml({ value, min, max, scale, unit }) {
 
 function applyFilter() {
   const f = state.filter;
-  $$("#report .check").forEach((el) => el.classList.toggle("hidden", f !== "all" && el.dataset.status !== f));
+  $$("#report .check").forEach((el) => el.classList.toggle("hidden", f !== "all" && !(f === "problem" ? el.dataset.status === "fail" || el.dataset.status === "warn" : el.dataset.status === f)));
   $$("#report .category").forEach((cat) => cat.classList.toggle("hidden", !$$(".check:not(.hidden)", cat).length));
   $$(".filter[data-filter]").forEach((b) => b.classList.toggle("active", b.dataset.filter === f));
 }
@@ -779,10 +951,24 @@ function selectTab(name) {
 }
 
 $("#search-form").addEventListener("submit", (e) => { e.preventDefault(); analyze($("#url-input").value); });
-$$(".chip").forEach((c) => c.addEventListener("click", () => { $("#url-input").value = c.dataset.url; analyze(c.dataset.url); }));
+$$(".chip").forEach((c) => c.addEventListener("click", () => { $("#url-input").value = c.dataset.url; updateHint(); analyze(c.dataset.url); }));
 $$(".tab").forEach((t) => t.addEventListener("click", () => selectTab(t.dataset.tab)));
 $$(".filter[data-filter]").forEach((b) => b.addEventListener("click", () => { state.filter = b.dataset.filter; applyFilter(); }));
 $$(".count").forEach((b) => b.addEventListener("click", () => { state.filter = b.dataset.filter; selectTab("report"); applyFilter(); }));
+
+$("#cat-grid").addEventListener("click", (e) => {
+  const card = e.target.closest(".cat-card");
+  if (card) goToReport({ cat: card.dataset.cat });
+});
+$("#fix-first").addEventListener("click", (e) => {
+  const item = e.target.closest("[data-chk]");
+  if (item) return goToReport({ chk: item.dataset.chk });
+  if (e.target.closest("#ff-all")) { state.filter = "problem"; selectTab("report"); applyFilter(); $("#panel-report").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+  const more = e.target.closest("#ff-more");
+  if (more) { $$("#fix-first li.more").forEach((li) => li.classList.remove("hidden")); more.remove(); }
+});
+$("#expand-all").addEventListener("click", () => $$("#report .check:not(.hidden)").forEach((el) => el.querySelector(".check-body") && el.classList.add("open")));
+$("#collapse-all").addEventListener("click", () => $$("#report .check").forEach((el) => el.classList.remove("open")));
 
 $("#report").addEventListener("click", (e) => {
   const head = e.target.closest(".check-head");
@@ -797,5 +983,5 @@ $("#tag-search").addEventListener("input", (e) => {
 const params = new URLSearchParams(location.search);
 const initial = params.get("url");
 if (["report", "google", "social", "tags"].includes(params.get("tab"))) startTab = params.get("tab");
-if (initial) { $("#url-input").value = initial; analyze(initial); }
+if (initial) { $("#url-input").value = initial; updateHint(); analyze(initial); }
 else $("#url-input").focus();

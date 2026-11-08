@@ -28,10 +28,11 @@
         <label for="url-input" class="sr-only">Website URL</label>
         <div class="search-box">
           <span class="search-prefix" aria-hidden="true">🌐</span>
-          <input id="url-input" type="text" inputmode="url" placeholder="Enter a website, e.g. stinson.com" spellcheck="false" required>
+          <input id="url-input" type="text" inputmode="url" placeholder="Type a website, e.g. stinson.com" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" enterkeyhint="go" aria-describedby="url-hint" required>
           <button type="submit" id="analyze-btn">Analyze</button>
         </div>
       </form>
+      <p class="url-hint" id="url-hint" aria-live="polite">Just type the site name. No need for https:// or www.</p>
       <div class="examples">
         Try:
         <button class="chip" data-url="https://www.deeplearning.ai">deeplearning.ai</button>
@@ -67,6 +68,7 @@
             <a id="final-url" target="_blank" rel="noopener"></a>
           </div>
           <p id="score-verdict" class="verdict"></p>
+          <div class="stackbar" id="stackbar" role="img" aria-label="Proportion of checks passed, to improve, failed and notes"></div>
           <div class="counts">
             <button class="count pass" data-filter="pass"><b id="count-pass">0</b> passed</button>
             <button class="count warn" data-filter="warn"><b id="count-warn">0</b> warnings</button>
@@ -74,8 +76,25 @@
             <button class="count info" data-filter="info"><b id="count-info">0</b> notes</button>
           </div>
           <div class="meta-strip" id="meta-strip"></div>
+          <ul class="url-notes hidden" id="url-notes"></ul>
         </div>
       </div>
+
+      <!-- At a glance -->
+      <section class="overview" id="overview" aria-labelledby="overview-title">
+        <div class="overview-head">
+          <h2 id="overview-title">At a glance</h2>
+          <div class="legend" aria-label="Legend">
+            <span><i class="icon fail">✕</i> Fix this: missing or broken</span>
+            <span><i class="icon warn">!</i> Improve: works, could be better</span>
+            <span><i class="icon pass">✓</i> Good</span>
+            <span><i class="icon info">i</i> Note: no score impact</span>
+          </div>
+        </div>
+        <div class="cat-grid" id="cat-grid"></div>
+        <div class="fixfirst" id="fix-first"></div>
+        <p class="overview-hint">Tap a card or an issue to jump to the full details below.</p>
+      </section>
 
       <!-- Tabs -->
       <nav class="tabs" role="tablist">
@@ -89,10 +108,14 @@
         <div class="filter-row">
           <span>Show:</span>
           <button class="filter active" data-filter="all">All</button>
+          <button class="filter" data-filter="problem">Needs attention</button>
           <button class="filter" data-filter="fail">Failed</button>
           <button class="filter" data-filter="warn">Warnings</button>
           <button class="filter" data-filter="pass">Passed</button>
           <button class="filter" data-filter="info">Notes</button>
+          <span class="filter-spacer"></span>
+          <button class="filter ghost" id="expand-all" type="button">Expand all</button>
+          <button class="filter ghost" id="collapse-all" type="button">Collapse all</button>
         </div>
         <div id="report"></div>
       </div>

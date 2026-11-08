@@ -25,6 +25,25 @@ Tip: you can link straight to a report, e.g. `http://localhost:8000/?url=example
 
 Each check is pass / warning / fail / note, weighted into a 0–100 score.
 
+## Just type the site name
+
+You only need to enter `stinson.com`. The server adds `https://` for you, and also:
+
+- falls back to `http://` if HTTPS fails, and to `www.` if the bare name isn't found (it tells you when it did);
+- accepts messy input: extra spaces or quotes, `https//`, trailing slashes, upper case, full paths, accented domain names;
+- assumes `.com` if you type just a name like `stinson`;
+- shows a live "We'll check https://…" hint as you type, and plain-English errors (unknown site, timeout, certificate problem).
+
+## At a glance
+
+Under the score you get a summary designed for people new to SEO:
+
+- a **proportion bar** of passed / improve / failed / notes;
+- a **card per category** with its own score ring, a dot per check (red / amber / green), and plain-English counts;
+- a **"Fix these first"** list, ranked by score impact, that jumps to the full detail when clicked.
+
+In the Report tab, problems are sorted first and colour-coded, each check has a **"Why it matters"** explanation, and there is a **Needs attention** filter plus Expand / Collapse all.
+
 ## Tabs
 
 - **Report**: every check, grouped and filterable, with the actual tag value and a best-practice tip.
